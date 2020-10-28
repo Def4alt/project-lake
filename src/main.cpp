@@ -1,45 +1,54 @@
-#include <functional>
-#include <iostream>
-
 #include <spdlog/spdlog.h>
-
-
 #include <docopt/docopt.h>
+#include <SDL.h>
+#include <map>
 
-#include <iostream>
+#include "Game.hpp"
+#include <memory>
+
+#undef main
 
 static constexpr auto USAGE =
-  R"(Naval Fate.
+  R"(Project Lake.
 
-    Usage:
-          naval_fate ship new <name>...
-          naval_fate ship <name> move <x> <y> [--speed=<kn>]
-          naval_fate ship shoot <x> <y>
-          naval_fate mine (set|remove) <x> <y> [--moored | --drifting]
-          naval_fate (-h | --help)
-          naval_fate --version
- Options:
-          -h --help     Show this screen.
-          --version     Show version.
-          --speed=<kn>  Speed in knots [default: 10].
-          --moored      Moored (anchored) mine.
-          --drifting    Drifting mine.
+	Usage:
+		  project-lake [options]
+
+	Options:
+		  -h --help			        Show this screen.
+          --width=WIDTH             Screen width in pixels [default: 1024].
+          --height=HEIGHT           Screen height in pixels [default: 768].
+          --fullscreen              Start in fullscreen.
 )";
 
 int main(int argc, const char **argv)
 {
-  std::map<std::string, docopt::value> args = docopt::docopt(USAGE,
-    { std::next(argv), std::next(argv, argc) },
-    true,// show help if requested
-    "Naval Fate 2.0");// version string
+	std::map<std::string, docopt::value> args = docopt::docopt(USAGE,
+	  { std::next(argv), std::next(argv, argc) },
+	  true,// show help if requested
+	  "Project Lake 1.0");// version string
 
-  for (auto const &arg : args) {
-    std::cout << arg.first << arg.second << std::endl;
-  }
+	const auto width = args["--width"].asLong();
+	const auto height = args["--height"].asLong();
+	const auto fullscreen = args["--fullscreen"].asBool();
 
+	for (auto const &arg : args) {
+		if (arg.second.isString()) {
+			spdlog::info("Parameter set '{}': {}", arg.first, arg.second.asString());
+		}
+	}
 
-  //Use the default logger (stdout, multi-threaded, colored)
-  spdlog::info("Hello, {}!", "World");
+	auto game = std::make_unique<engine::Game>("Project Lake", static_cast<int>(width), static_cast<int>(height), fullscreen);
 
-  fmt::print("Hello, from {}\n", "{fmt}");
+	while (game->is_running()) {
+		game->handle_events();
+
+		game->update();
+        game->render();
+        game->imgui_render();
+		
+		game->swap_window();
+	}
+
+	return 0;
 }
