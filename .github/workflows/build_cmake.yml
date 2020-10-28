@@ -41,7 +41,7 @@ jobs:
       # We need to source the profile file to make sure conan is in PATH
       run: |
         source ~/.profile
-        sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev xorg xorg-dev libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev libxcb-render-util0-dev libxcb-icccm4-dev
+        sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev xorg xorg-dev libxcb-randr0-dev libxcb-xtest0-dev libxcb-xinerama0-dev libxcb-shape0-dev libxcb-xkb-dev libxcb-render-util0-dev libxcb-icccm4-dev libxcb-image0-dev
         cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
     - name: Build
