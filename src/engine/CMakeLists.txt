@@ -1,7 +1,8 @@
 add_library(lake-engine STATIC
         "Game.cpp" "Game.hpp"
-        "GameController.cpp" "GameController.hpp"
-        "ImGuiHelper.hpp")
+        "GameController.hpp"
+        "ImGuiHelper.hpp"
+        "Input.hpp" Event.hpp)
 
 add_subdirectory(vendor/imgui)
 

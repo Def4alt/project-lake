@@ -1,15 +1,14 @@
 #ifndef LAKE_ENGINE_GAME_HPP
 #define LAKE_ENGINE_GAME_HPP
 
+#include "Input.hpp"
 #include <string_view>
-#include <SDL.h>
-#include "GameController.hpp"
 
 namespace engine {
-class Game
-{
+class Game {
   public:
-	Game(std::string_view title, const int width, const int height, bool fullscreen);
+	Game(std::string_view title, const int width, int height,
+	     bool fullscreen);
 	~Game();
 
 	void handle_events();
@@ -18,15 +17,19 @@ class Game
 	void imgui_render();
 	void swap_window();
 
-	[[nodiscard]] constexpr auto is_running() const noexcept { return is_running_; }
+	[[nodiscard]] constexpr auto is_running() const noexcept {
+		return is_running_;
+	}
 
   protected:
 	SDL_Window *window_;
 	SDL_GLContext context_;
-	GameController controller_;
+	GameState gameState_;
+
+	std::vector<Event> events{TimeElapsed{}};
 
 	bool is_running_;
 };
-}// namespace engine
+} // namespace engine
 
-#endif// LAKE_ENGINE_GAME_HPP
+#endif // LAKE_ENGINE_GAME_HPP

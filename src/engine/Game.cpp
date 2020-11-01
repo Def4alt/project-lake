@@ -2,10 +2,8 @@
 
 #include "ImGuiHelper.hpp"
 #include <GL/glew.h>
-#include <imgui.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl.h>
-#include <spdlog/spdlog.h>
 
 namespace engine {
 Game::Game(std::string_view title, const int width, const int height,
@@ -44,9 +42,6 @@ Game::Game(std::string_view title, const int width, const int height,
 	ImGui_ImplSDL2_InitForOpenGL(window_, context_);
 	ImGui_ImplOpenGL3_Init(reinterpret_cast<const char *>(
 	    glGetString(GL_NUM_SHADING_LANGUAGE_VERSIONS)));
-
-	controller_ = GameController{0, {}, {}};
-	controller_.update();
 }
 
 Game::~Game() {
@@ -60,46 +55,53 @@ Game::~Game() {
 }
 
 void Game::handle_events() {
-	SDL_Event event{};
+	const auto event = gameState_.nextEvent(*window_);
 
-	ImGui_ImplSDL2_ProcessEvent(&event);
-	while (SDL_PollEvent(&event)) {
-		switch (event.type) {
-		case SDL_QUIT:
-			is_running_ = false;
-			break;
-		case SDL_CONTROLLERBUTTONDOWN:
-			controller_.buttonState[event.cbutton.button] = true;
-			break;
-		case SDL_CONTROLLERBUTTONUP:
-			controller_.buttonState[event.cbutton.button] = false;
-			break;
-		case SDL_CONTROLLERAXISMOTION:
-			controller_.axisState[event.caxis.axis] = event.caxis.value;
-		}
+	if (const auto sdlEvent = GameState::toSDLEvent(event); sdlEvent) {
+		ImGui_ImplSDL2_ProcessEvent(
+		    reinterpret_cast<const SDL_Event *>(&sdlEvent));
 	}
+
+	std::visit(overloaded{[](TimeElapsed &prev, const TimeElapsed &next) {
+		                      prev.elapsed += next.elapsed;
+	                      },
+	                      [&](const auto &, const std::monostate &) {},
+	                      [&](const auto &, const auto &next) {
+		                      events.push_back(next);
+	                      }},
+	           events.back(), event);
+
+	std::visit(overloaded{[&](const GameControllerEvent auto &gc) {
+		                      gameState_.update(gc);
+	                      },
+	                      [&](const CloseWindow &) { is_running_ = false; },
+	                      [&](const std::monostate &) {
+
+	                      },
+	                      [&](const auto &) {}},
+	           event);
 }
 
-void Game::update() {
-}
+void Game::update() {}
 
 void Game::imgui_render() {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL2_NewFrame(window_);
 	ImGui::NewFrame();
 
+	const auto gc =
+	    GameState::gameControllerById(gameState_.gameControllers, 0);
+
 	for (std::size_t i = 0; i < engine::CONTROLLER_BUTTON_LIST.size(); i++) {
-		ImGuiHelper::Text("{}: {}",
-		                  engine::to_string(
-		                      engine::CONTROLLER_BUTTON_LIST.at(i)),
-		                  controller_.buttonState.at(i));
+		ImGuiHelper::Text(
+		    "{}: {}", engine::toString(engine::CONTROLLER_BUTTON_LIST.at(i)),
+		    gc.buttonState.at(i));
 	}
 
 	for (std::size_t i = 0; i < engine::CONTROLLER_AXIS_LIST.size(); i++) {
 		ImGuiHelper::Text("{}: {}",
-		                  engine::to_string(
-		                      engine::CONTROLLER_AXIS_LIST.at(i)),
-		                  controller_.axisState.at(i));
+		                  engine::toString(engine::CONTROLLER_AXIS_LIST.at(i)),
+		                  gc.axisState.at(i));
 	}
 
 	ImGui::Render();
